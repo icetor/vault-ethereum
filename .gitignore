@@ -3,6 +3,8 @@
 *.iml
 scripts/**
 **/data
+**/raft/*
+!**/raft/.gitkeep
 **/test/data
 **/releases/*
 **/scripts

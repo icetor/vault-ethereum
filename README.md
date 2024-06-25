@@ -92,3 +92,36 @@ This is my ETH address. The private keys are managed by this plugin:
 
 `0x68350c4c58eE921B30A4B1230BF6B14441B46981`
 
+### Ethereum Account Operations
+  - **Create Account:** `/accounts/{name}`
+    - Create an Ethereum account using a generated or provided passphrase.
+  - **Get Account Balance:** `/accounts/{name}/balance`
+    - Return the balance for an account.
+  - **Deploy Smart Contract:** `/accounts/{name}/deploy`
+    - Deploy a smart contract from an account.
+  - **ERC-20 Operations:**
+    - **Approve Spending:** `/accounts/{name}/erc20/approve`
+      - Allow spender to withdraw from your account.
+    - **Get ERC-20 Balance:** `/accounts/{name}/erc20/balanceOf`
+      - Return the balance for an address's ERC-20 holdings.
+    - **Get ERC-20 Total Supply:** `/accounts/{name}/erc20/totalSupply`
+      - Return the total supply for an ERC-20 token.
+    - **Transfer ERC-20:** `/accounts/{name}/erc20/transfer`
+      - Transfer ERC-20 holdings to another address.
+    - **Transfer From ERC-20:** `/accounts/{name}/erc20/transferFrom`
+      - Transfer ERC-20 holdings from another address to this address.
+  - **Signing Operations:**
+    - **Sign Message:** `/accounts/{name}/sign`
+      - Sign a message.
+    - **Sign Transaction:** `/accounts/{name}/sign-tx`
+      - Sign a transaction.
+  - **Transfer ETH:** `/accounts/{name}/transfer`
+    - Send ETH from an account.
+  - **List Accounts:** `/accounts/`
+    - List all Ethereum accounts at this path.
+  ### Plugin Configuration
+  - **Configure Plugin:** `/config`
+    - Configure the Vault Ethereum plugin.
+  ### Ethereum Unit Conversion
+  - **Convert Units:** `/convert`
+    - Convert any Ethereum unit to another.
