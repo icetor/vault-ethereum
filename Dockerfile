@@ -17,7 +17,7 @@ RUN mkdir -p /build/bin \
 FROM hashicorp/vault:latest
 ARG always_upgrade
 RUN echo ${always_upgrade} > /dev/null && apk update && apk upgrade
-RUN apk add bash openssl jq
+RUN apk add bash openssl jq curl
 
 USER vault
 WORKDIR /app
@@ -26,4 +26,4 @@ RUN mkdir -p /home/vault/plugins
 COPY --from=builder /build/bin/vault-ethereum /home/vault/plugins/vault-ethereum
 COPY --from=builder /build/bin/SHA256SUMS /home/vault/plugins/SHA256SUMS
 RUN ls -la /home/vault/plugins
-HEALTHCHECK CMD nc -zv 127.0.0.1 9200 || exit 1
+HEALTHCHECK CMD curl --fail --silent --show-error http://127.0.0.1:9200/v1/sys/health || exit 1
