@@ -2,11 +2,13 @@ default_lease_ttl = "24h"
 disable_mlock = "true"
 max_lease_ttl = "43800h"
 
-backend "file" {
-path = "/home/vault/config/data"
+storage "raft" {
+   path = "/home/vault/config/raft"
+   node_id = "raft_node_1"
 }
 
 api_addr = "https://localhost:9200"
+cluster_addr = "https://localhost:9201"
 ui = "false"
 
 plugin_directory = "/home/vault/plugins"
