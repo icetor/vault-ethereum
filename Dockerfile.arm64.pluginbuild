@@ -1,0 +1,25 @@
+# Use the official Go image for ARM64 on Linux architecture
+FROM --platform=linux/arm64 golang:1.17-alpine AS builder
+
+RUN apk add --update alpine-sdk
+RUN apk update && apk add git openssh gcc musl-dev linux-headers
+
+WORKDIR /build
+
+# Copy go.mod and go.sum to download dependencies
+COPY go.mod .
+COPY go.sum .
+
+# Download dependencies
+RUN go mod download
+
+# Copy the rest of the plugin source code
+COPY . .
+
+# Build the plugin binary for ARM64, targeting Linux
+RUN mkdir -p /build/bin \
+    && CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -a -ldflags '-extldflags "-static"' -o /build/bin/vault-ethereum . \
+    && sha256sum /build/bin/vault-ethereum > /build/bin/SHA256SUMS
+
+# Keep the container alive for debugging (optional)
+CMD ["sleep", "infinity"]

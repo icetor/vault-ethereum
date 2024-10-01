@@ -1,13 +1,13 @@
 *.code-workspace
 .idea
 *.iml
-scripts/**
+binaries/**
 **/data
 **/raft/*
 !**/raft/.gitkeep
 **/test/data
 **/releases/*
-**/scripts
+**/binaries
 .DS_Store
 **/.DS_Store
 **/helper/*.txt
