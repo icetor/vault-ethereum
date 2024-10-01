@@ -529,7 +529,7 @@ func (b *PluginBackend) NewWalletTransactor(chainID *big.Int, hdwallet *bip44.Wa
 			if address != account.Address {
 				return nil, errors.New("not authorized to sign this account")
 			}
-			signedTx, err := hdwallet.SignTx(*account, tx, chainID)
+			signedTx, err := hdwallet.SignTxEIP155(*account, tx, chainID)
 			if err != nil {
 				return nil, err
 			}
