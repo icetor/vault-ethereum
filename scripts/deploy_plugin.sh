@@ -20,6 +20,7 @@ prompt_if_missing "PLUGIN_BINARY_PATH" "Enter the path to the plugin binary: " "
 prompt_if_missing "VAULT_CONTAINER_ID" "Enter the Vault container ID or name: " ""
 prompt_if_missing "VAULT_USERNAME" "Enter the Vault username: " ""
 prompt_if_missing "VAULT_PASSWORD" "Enter the Vault password: " ""
+prompt_if_missing "VAULT_ADDR" "Enter the Vault address: " ""
 prompt_if_missing "PLUGIN_SHA256" "Enter the plugin binary SHA256 checksum: " ""
 prompt_if_missing "PLUGIN_VERSION" "Enter the plugin version: " ""
 
@@ -69,6 +70,11 @@ fi
 
 # Enable the secret engine only for the first time vault-ethereum is initialized
 vault secrets list | grep -q "vault-ethereum/" || vault secrets enable -path=vault-ethereum -plugin-name=vault-ethereum plugin
+
+if [ $? -ne 0 ]; then
+  echo "Failed to enable the plugin."
+  exit 1
+fi
 
 echo "Listing registered plugins..."
 vault plugin list -detailed

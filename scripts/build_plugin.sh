@@ -19,7 +19,7 @@ if [ "$ARCHITECTURE" != "amd64" ] && [ "$ARCHITECTURE" != "arm64" ]; then
 fi
 
 # Step 1: Build the new plugin binary inside a temporary docker container with the selected architecture
-docker build --build-arg ARCHITECTURE=$ARCHITECTURE -f ../Dockerfile.$ARCHITECTURE.pluginbuild -t vault-ethereum-builder ..
+docker build --build-arg ARCHITECTURE=$ARCHITECTURE -f ../Dockerfile.pluginbuild -t vault-ethereum-builder ..
 
 # Check if the docker build command was successful
 if [ $? -ne 0 ]; then
