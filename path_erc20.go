@@ -224,21 +224,21 @@ func (b *PluginBackend) pathERC20BalanceOf(ctx context.Context, req *logical.Req
 		return nil, err
 	}
 
-	decimals, err := erc20CallerSession.Decimals()
-	if err != nil {
-		return nil, err
-	}
+	// decimals, err := erc20CallerSession.Decimals()
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	fbal := new(big.Float)
-	fbal.SetString(bal.String())
-	value := new(big.Float).Quo(fbal, big.NewFloat(math.Pow10(int(decimals))))
+	// fbal := new(big.Float)
+	// fbal.SetString(bal.String())
+	// value := new(big.Float).Quo(fbal, big.NewFloat(math.Pow10(int(decimals))))
 
 	return &logical.Response{
 		Data: map[string]interface{}{
 			"contract": contractAddress.Hex(),
 			"symbol":   symbol,
 			"name":     tokenName,
-			"balance":  value,
+			"balance":  bal.String(),
 		},
 	}, nil
 
@@ -294,10 +294,10 @@ func (b *PluginBackend) pathERC20Transfer(ctx context.Context, req *logical.Requ
 		return nil, err
 	}
 
-	decimals, err := erc20CallerSession.Decimals()
-	if err != nil {
-		return nil, err
-	}
+	// decimals, err := erc20CallerSession.Decimals()
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	transactionParams, err := b.getBaseData(client, account.Address, data, "to")
 	if err != nil {
@@ -321,7 +321,8 @@ func (b *PluginBackend) pathERC20Transfer(ctx context.Context, req *logical.Requ
 	if err != nil {
 		return nil, err
 	}
-	tokenAmount := util.TokenAmount(tokens.Int64(), decimals)
+	// tokenAmount := util.TokenAmount(tokens.Int64(), decimals)
+	tokenAmount := new(big.Int).SetInt64(tokens.Int64())
 	transactOpts, err := b.NewWalletTransactor(chainID, wallet, account)
 	if err != nil {
 		return nil, err
