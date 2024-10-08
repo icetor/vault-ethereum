@@ -343,3 +343,13 @@ func TokenAmount(amount int64, decimals uint8) *big.Int {
 	var bigProduct = new(big.Int)
 	return bigProduct.Mul(bigPower, bigAmount)
 }
+
+func ErrorResponse(err error) (*logical.Response, error) {
+	return &logical.Response{
+		Data: map[string]interface{}{
+			"data":    nil,
+			"code":    1,
+			"message": err.Error(),
+		},
+	}, nil
+}

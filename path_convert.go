@@ -25,6 +25,7 @@ import (
 	"github.com/hashicorp/vault/sdk/framework"
 	"github.com/hashicorp/vault/sdk/logical"
 	"github.com/shopspring/decimal"
+	"github.com/immutability-io/vault-ethereum/util"
 	coingecko "github.com/superoo7/go-gecko/v3"
 )
 
@@ -241,7 +242,7 @@ func ConvertToUSD(amountInWei string) (decimal.Decimal, error) {
 func (b *PluginBackend) pathConvertWrite(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 	_, err := b.configured(ctx, req)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	usdFrom := false
@@ -251,26 +252,26 @@ func (b *PluginBackend) pathConvertWrite(ctx context.Context, req *logical.Reque
 	oneETH, _ := decimal.NewFromString("1")
 	unitFrom, err := ValidUnit(data.Get("unit_from").(string))
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	amountFrom := data.Get("amount").(string)
 	amount, err := decimal.NewFromString(amountFrom)
 	if err != nil || amount.IsNegative() {
-		return nil, fmt.Errorf("amount is either not a number or is negative")
+		return util.ErrorResponse(err);
 	}
 
 	unitTo, err := ValidUnit(data.Get("unit_to").(string))
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	if unitFrom == unitTo {
-		return nil, fmt.Errorf("Conversion from %s to %s makes no sense", unitFrom, unitTo)
+		return util.ErrorResponse(err);
 	}
 	if unitFrom == USD || unitTo == USD {
 		oneETHInWei := ConvertToWei(ETH, oneETH)
 		exchangeValue, err = ConvertToUSD(oneETHInWei.String())
 		if err != nil {
-			return nil, err
+			return util.ErrorResponse(err);
 		}
 	}
 	if unitFrom == USD {
@@ -278,7 +279,7 @@ func (b *PluginBackend) pathConvertWrite(ctx context.Context, req *logical.Reque
 		unitFrom = ETH
 		amount = amount.Div(exchangeValue)
 		if err != nil {
-			return nil, err
+			return util.ErrorResponse(err);
 		}
 	}
 	amountFromInWei := ConvertToWei(unitFrom, amount)
@@ -298,10 +299,14 @@ func (b *PluginBackend) pathConvertWrite(ctx context.Context, req *logical.Reque
 	}
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"unit_from":   unitFrom,
-			"amount_from": amount,
-			"unit_to":     unitTo,
-			"amount_to":   amountFromInUnits.String(),
+			"data": map[string]interface{}{
+				"unit_from":   unitFrom,
+				"amount_from": amount,
+				"unit_to":     unitTo,
+				"amount_to":   amountFromInUnits.String(),
+			},
+			"code": 0,
+			"message": "Succesfull conversion.",
 		},
 	}, nil
 }
@@ -309,13 +314,17 @@ func (b *PluginBackend) pathConvertWrite(ctx context.Context, req *logical.Reque
 func (b *PluginBackend) pathTest(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 	_, err := b.configured(ctx, req)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	fileData := data.Get("file").(string)
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"file_data": fileData,
+			"data": map[string]interface{}{
+				"file_data": fileData,
+			},
+			"code": 0,
+			"message": "Succesfull file upload.",
 		},
 	}, nil
 }
