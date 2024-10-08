@@ -19,8 +19,6 @@ prompt_if_missing() {
 prompt_if_missing "VAULT_TOKEN" "Enter vault token with required capabilities: " ""
 prompt_if_missing "PLUGIN_BINARY_PATH" "Enter the path to the plugin binary: " ""
 prompt_if_missing "VAULT_CONTAINER_ID" "Enter the Vault container ID or name: " ""
-prompt_if_missing "VAULT_USERNAME" "Enter the Vault username: " ""
-prompt_if_missing "VAULT_PASSWORD" "Enter the Vault password: " ""
 prompt_if_missing "VAULT_ADDR" "Enter the Vault address: " ""
 prompt_if_missing "PLUGIN_SHA256" "Enter the plugin binary SHA256 checksum: " ""
 prompt_if_missing "PLUGIN_VERSION" "Enter the plugin version: " ""
