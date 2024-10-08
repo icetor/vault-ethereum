@@ -18,8 +18,7 @@ Use the following example policy and assign it to the user.
 ```bash
 export PLUGIN_BINARY_PATH=
 export VAULT_CONTAINER_ID=
-export VAULT_USERNAME=
-export VAULT_PASSWORD=
+export VAULT_TOKEN=
 export VAULT_ADDR=
 export PLUGIN_SHA256=
 export PLUGIN_VERSION=
