@@ -16,6 +16,7 @@ prompt_if_missing() {
 }
 
 # Prompt for missing variables
+prompt_if_missing "VAULT_TOKEN" "Enter vault token with required capabilities: " ""
 prompt_if_missing "PLUGIN_BINARY_PATH" "Enter the path to the plugin binary: " ""
 prompt_if_missing "VAULT_CONTAINER_ID" "Enter the Vault container ID or name: " ""
 prompt_if_missing "VAULT_USERNAME" "Enter the Vault username: " ""
@@ -44,15 +45,6 @@ docker exec "${VAULT_CONTAINER_ID}" /bin/sh -c "
 # Step 3: Prepare the environment and register the plugin
 echo "Setting Vault environment variables..."
 export VAULT_SKIP_VERIFY=true
-
-echo "Logging into Vault as ${VAULT_USERNAME}..."
-vault login -method=userpass username="${VAULT_USERNAME}" password="${VAULT_PASSWORD}"
-
-# Check if login was successful
-if [ $? -ne 0 ]; then
-  echo "Failed to log into Vault."
-  exit 1
-fi
 
 echo "Registering the plugin with Vault..."
 

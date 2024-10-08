@@ -12,7 +12,7 @@ fi
 VERSION=$1
 
 # Step 1: Build the corresponding Vault Docker image
-docker build -f ../Dockerfile.vaultbuild --build-arg always_upgrade="$DATE" -t icecorp/vault:$VERSION ..
+docker build -f ./docker/Dockerfile.vaultbuild --build-arg always_upgrade="$DATE" -t icecorp/vault:$VERSION .
 
 # Check if the docker build command was successful
 if [ $? -ne 0 ]; then
@@ -37,7 +37,7 @@ if docker ps -a --format '{{.Names}}' | grep -q vault_server; then
 fi
 
 # Get the absolute path for the config directory
-CONFIG_DIR=$(realpath ../docker/config)
+CONFIG_DIR=$(realpath ./config)
 
 # Step 4: Create and run the container using the absolute path
 docker run -d \
