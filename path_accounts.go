@@ -294,9 +294,17 @@ https://eth.wiki/json-rpc/API#eth_sign
 func (b *PluginBackend) pathAccountsList(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 	vals, err := req.Storage.List(ctx, QualifiedPath("accounts/"))
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
-	return logical.ListResponse(vals), nil
+	return &logical.Response{
+        Data: map[string]interface{}{
+            "data": map[string]interface{}{
+                "accounts": vals,
+            },
+            "code": 0,
+            "message": "Successful account list retrieval.", 
+        },
+    }, nil
 }
 
 func readAccount(ctx context.Context, req *logical.Request, name string) (*AccountJSON, error) {
@@ -321,24 +329,28 @@ func readAccount(ctx context.Context, req *logical.Request, name string) (*Accou
 func (b *PluginBackend) pathAccountsRead(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 	_, err := b.configured(ctx, req)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err)
 	}
 	name := data.Get("name").(string)
 	accountJSON, err := readAccount(ctx, req, name)
 
 	_, account, err := getWalletAndAccount(*accountJSON)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err)
 	}
 	if err != nil || accountJSON == nil {
-		return nil, fmt.Errorf("Error reading account")
+		return util.ErrorResponse(err)
 	}
 
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"address":    account.Address.Hex(),
-			"inclusions": accountJSON.Inclusions,
-			"exclusions": accountJSON.Exclusions,
+			"data": map[string]interface{}{
+				"address":    account.Address.Hex(),
+				"inclusions": accountJSON.Inclusions,
+				"exclusions": accountJSON.Exclusions,
+			},
+            "code": 0,
+            "message": "Successful account retrieval.", 
 		},
 	}, nil
 }
@@ -376,7 +388,7 @@ func getWalletAndAccount(accountJSON AccountJSON) (*bip44.Wallet, *accounts.Acco
 func (b *PluginBackend) pathAccountsCreate(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 	_, err := b.configured(ctx, req)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	name := data.Get("name").(string)
 	var inclusions []string
@@ -392,7 +404,7 @@ func (b *PluginBackend) pathAccountsCreate(ctx context.Context, req *logical.Req
 	if mnemonic == Empty {
 		entropy, err := bip39.NewEntropy(128)
 		if err != nil {
-			return nil, err
+			return util.ErrorResponse(err);
 		}
 
 		mnemonic, err = bip39.NewMnemonic(entropy)
@@ -400,7 +412,7 @@ func (b *PluginBackend) pathAccountsCreate(ctx context.Context, req *logical.Req
 	}
 
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	accountJSON := &AccountJSON{
 		Index:      index,
@@ -410,7 +422,7 @@ func (b *PluginBackend) pathAccountsCreate(ctx context.Context, req *logical.Req
 	}
 	_, account, err := getWalletAndAccount(*accountJSON)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err)
 	}
 
 	err = b.updateAccount(ctx, req, name, accountJSON)
@@ -420,9 +432,13 @@ func (b *PluginBackend) pathAccountsCreate(ctx context.Context, req *logical.Req
 
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"address":    account.Address.Hex(),
-			"inclusions": accountJSON.Inclusions,
-			"exclusions": accountJSON.Exclusions,
+			"data": map[string]interface{}{
+				"address":    account.Address.Hex(),
+				"inclusions": accountJSON.Inclusions,
+				"exclusions": accountJSON.Exclusions,
+			},
+			"code": 0,
+            "message": "Successful account creation.", 
 		},
 	}, nil
 }
@@ -445,13 +461,13 @@ func (b *PluginBackend) updateAccount(ctx context.Context, req *logical.Request,
 func (b *PluginBackend) pathAccountUpdate(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 	_, err := b.configured(ctx, req)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	name := data.Get("name").(string)
 	accountJSON, err := readAccount(ctx, req, name)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	var inclusions []string
 	if inclusionsRaw, ok := data.GetOk("inclusions"); ok {
@@ -466,18 +482,22 @@ func (b *PluginBackend) pathAccountUpdate(ctx context.Context, req *logical.Requ
 
 	err = b.updateAccount(ctx, req, name, accountJSON)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	_, account, err := getWalletAndAccount(*accountJSON)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"address":    account.Address.Hex(),
-			"inclusions": accountJSON.Inclusions,
-			"exclusions": accountJSON.Exclusions,
+			"data": map[string]interface{}{
+				"address":    account.Address.Hex(),
+				"inclusions": accountJSON.Inclusions,
+				"exclusions": accountJSON.Exclusions,
+			},
+			"code": 0,
+			"message": "Successful account update.",
 		},
 	}, nil
 
@@ -609,56 +629,62 @@ func (b *PluginBackend) pathTransfer(ctx context.Context, req *logical.Request, 
 	var txDataToSign []byte
 	config, err := b.configured(ctx, req)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	name := data.Get("name").(string)
 
 	chainID := util.ValidNumber(config.ChainID)
 	if chainID == nil {
-		return nil, fmt.Errorf("invalid chain ID")
+		return &logical.Response{
+			Data: map[string]interface{}{
+				"data":    nil,
+				"code":    0,
+				"message": fmt.Sprintf("invalid chain ID"),
+			},
+		}, nil
 	}
 	client, err := ethclient.Dial(config.getRPCURL())
 	if err != nil {
-		return nil, fmt.Errorf("cannot connect to " + config.getRPCURL())
+		return util.ErrorResponse(err);
 	}
 
 	accountJSON, err := readAccount(ctx, req, name)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	wallet, account, err := getWalletAndAccount(*accountJSON)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	transactionParams, err := b.getData(client, account.Address, data)
 
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	accountJSON.Inclusions = append(accountJSON.Inclusions, config.Inclusions...)
 	accountJSON.Inclusions = append(accountJSON.Inclusions, accountJSON.Inclusions...)
 	if len(accountJSON.Inclusions) > 0 && !util.Contains(accountJSON.Inclusions, transactionParams.Address.Hex()) {
-		return nil, fmt.Errorf("%s violates the inclusions %+v", transactionParams.Address.Hex(), accountJSON.Inclusions)
+		return util.ErrorResponse(err);
 	}
 	err = config.ValidAddress(transactionParams.Address)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	err = accountJSON.ValidAddress(transactionParams.Address)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	tx := types.NewTransaction(transactionParams.Nonce, *transactionParams.Address, transactionParams.Amount, transactionParams.GasLimit, transactionParams.GasPrice, txDataToSign)
 	signedTx, err := wallet.SignTxEIP155(*account, tx, chainID)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	err = client.SendTransaction(context.Background(), signedTx)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	var signedTxBuff bytes.Buffer
@@ -666,14 +692,18 @@ func (b *PluginBackend) pathTransfer(ctx context.Context, req *logical.Request, 
 
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"transaction_hash":   signedTx.Hash().Hex(),
-			"signed_transaction": hexutil.Encode(signedTxBuff.Bytes()),
-			"from":               account.Address.Hex(),
-			"to":                 transactionParams.Address.String(),
-			"amount":             transactionParams.Amount.String(),
-			"nonce":              strconv.FormatUint(transactionParams.Nonce, 10),
-			"gas_price":          transactionParams.GasPrice.String(),
-			"gas_limit":          strconv.FormatUint(transactionParams.GasLimit, 10),
+			"data": map[string]interface{}{
+				"transaction_hash":   signedTx.Hash().Hex(),
+				"signed_transaction": hexutil.Encode(signedTxBuff.Bytes()),
+				"from":               account.Address.Hex(),
+				"to":                 transactionParams.Address.String(),
+				"amount":             transactionParams.Amount.String(),
+				"nonce":              strconv.FormatUint(transactionParams.Nonce, 10),
+				"gas_price":          transactionParams.GasPrice.String(),
+				"gas_limit":          strconv.FormatUint(transactionParams.GasLimit, 10),
+			},
+			"code": 0,
+			"message": "Successful transaction.",
 		},
 	}, nil
 }
@@ -681,49 +711,55 @@ func (b *PluginBackend) pathTransfer(ctx context.Context, req *logical.Request, 
 func (b *PluginBackend) pathDeploy(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 	config, err := b.configured(ctx, req)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	name := data.Get("name").(string)
 
 	chainID := util.ValidNumber(config.ChainID)
 	if chainID == nil {
-		return nil, fmt.Errorf("invalid chain ID")
+		return &logical.Response{
+			Data: map[string]interface{}{
+				"data":    nil,
+				"code":    0,
+				"message": fmt.Sprintf("invalid chain ID"),
+			},
+		}, nil
 	}
 	client, err := ethclient.Dial(config.getRPCURL())
 	if err != nil {
-		return nil, fmt.Errorf("cannot connect to " + config.getRPCURL())
+		return util.ErrorResponse(err);
 	}
 
 	accountJSON, err := readAccount(ctx, req, name)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	wallet, account, err := getWalletAndAccount(*accountJSON)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	transactionParams, err := b.getBaseData(client, account.Address, data, Empty)
 
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	abiData := data.Get("abi").(string)
 	parsed, err := abi.JSON(strings.NewReader(abiData))
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	binData := data.Get("bin").(string)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	binRaw := common.FromHex(binData)
 	transactOpts, err := b.NewWalletTransactor(chainID, wallet, account)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	gasLimitIn := util.ValidNumber(data.Get("gas_limit").(string))
 	gasLimit := gasLimitIn.Uint64()
@@ -734,12 +770,12 @@ func (b *PluginBackend) pathDeploy(ctx context.Context, req *logical.Request, da
 
 	gasLimit, err = util.EstimateGas(transactOpts, parsed, binRaw, client)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	transactOpts.GasLimit = gasLimit
 	contractAddress, tx, _, err := bind.DeployContract(transactOpts, parsed, binRaw, client)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	//	b.LogTx(tx)
 	var signedTxBuff bytes.Buffer
@@ -747,13 +783,17 @@ func (b *PluginBackend) pathDeploy(ctx context.Context, req *logical.Request, da
 
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"transaction_hash":   tx.Hash().Hex(),
-			"signed_transaction": hexutil.Encode(signedTxBuff.Bytes()),
-			"from":               account.Address.Hex(),
-			"contract":           contractAddress.Hex(),
-			"nonce":              transactOpts.Nonce.String(),
-			"gas_price":          transactOpts.GasPrice.String(),
-			"gas_limit":          strconv.FormatUint(gasLimit, 10),
+			"data": map[string]interface{}{
+				"transaction_hash":   tx.Hash().Hex(),
+				"signed_transaction": hexutil.Encode(signedTxBuff.Bytes()),
+				"from":               account.Address.Hex(),
+				"contract":           contractAddress.Hex(),
+				"nonce":              transactOpts.Nonce.String(),
+				"gas_price":          transactOpts.GasPrice.String(),
+				"gas_limit":          strconv.FormatUint(gasLimit, 10),
+			},
+			"code": 0,
+			"message": "Successful contract deployment.",
 		},
 	}, nil
 }
@@ -762,77 +802,87 @@ func (b *PluginBackend) pathSignTx(ctx context.Context, req *logical.Request, da
 	var txDataToSign []byte
 	config, err := b.configured(ctx, req)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	client, err := ethclient.Dial(config.getRPCURL())
 	if err != nil {
-		return nil, fmt.Errorf("cannot connect to " + config.getRPCURL())
+		return util.ErrorResponse(err);
 	}
 
 	name := data.Get("name").(string)
 
 	chainID := util.ValidNumber(config.ChainID)
 	if chainID == nil {
-		return nil, fmt.Errorf("invalid chain ID")
+		return &logical.Response{
+			Data: map[string]interface{}{
+				"data":    nil,
+				"code":    0,
+				"message": fmt.Sprintf("invalid chain ID"),
+			},
+		}, nil
 	}
 	dataOrFile := data.Get("data").(string)
 	encoding := data.Get("encoding").(string)
 	if encoding == "hex" {
 		txDataToSign, err = util.Decode([]byte(dataOrFile))
 		if err != nil {
-			return nil, err
+			return util.ErrorResponse(err);
 		}
 	} else if encoding == "utf8" {
 		txDataToSign = []byte(dataOrFile)
 	} else {
-		return nil, fmt.Errorf("invalid encoding encountered - %s", encoding)
+		return util.ErrorResponse(err);
 	}
 	accountJSON, err := readAccount(ctx, req, name)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	wallet, account, err := getWalletAndAccount(*accountJSON)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	transactionParams, err := b.getData(client, account.Address, data)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	accountJSON.Inclusions = append(accountJSON.Inclusions, config.Inclusions...)
 	if len(accountJSON.Inclusions) > 0 && !util.Contains(accountJSON.Inclusions, transactionParams.Address.Hex()) {
-		return nil, fmt.Errorf("%s violates the set of inclusions %+v", transactionParams.Address.Hex(), accountJSON.Inclusions)
+		return util.ErrorResponse(err);
 	}
 	err = config.ValidAddress(transactionParams.Address)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	err = accountJSON.ValidAddress(transactionParams.Address)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	tx := types.NewTransaction(transactionParams.Nonce, *transactionParams.Address, transactionParams.Amount, transactionParams.GasLimit, transactionParams.GasPrice, txDataToSign)
 
 	signedTx, err := wallet.SignTxEIP155(*account, tx, chainID)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	var signedTxBuff bytes.Buffer
 	signedTx.EncodeRLP(&signedTxBuff)
 
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"transaction_hash":   signedTx.Hash().Hex(),
-			"signed_transaction": hexutil.Encode(signedTxBuff.Bytes()),
-			"from":               account.Address.Hex(),
-			"to":                 transactionParams.Address.String(),
-			"amount":             transactionParams.Amount.String(),
-			"nonce":              strconv.FormatUint(transactionParams.Nonce, 10),
-			"gas_price":          transactionParams.GasPrice.String(),
-			"gas_limit":          strconv.FormatUint(transactionParams.GasLimit, 10),
+			"data": map[string]interface{}{
+				"transaction_hash":   signedTx.Hash().Hex(),
+				"signed_transaction": hexutil.Encode(signedTxBuff.Bytes()),
+				"from":               account.Address.Hex(),
+				"to":                 transactionParams.Address.String(),
+				"amount":             transactionParams.Amount.String(),
+				"nonce":              strconv.FormatUint(transactionParams.Nonce, 10),
+				"gas_price":          transactionParams.GasPrice.String(),
+				"gas_limit":          strconv.FormatUint(transactionParams.GasLimit, 10),
+			},
+			"code": 0,
+			"message": "Successful transaction signing.",
 		},
 	}, nil
 
@@ -841,33 +891,37 @@ func (b *PluginBackend) pathSignTx(ctx context.Context, req *logical.Request, da
 func (b *PluginBackend) pathReadBalance(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 	config, err := b.configured(ctx, req)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	name := data.Get("name").(string)
 	accountJSON, err := readAccount(ctx, req, name)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	_, account, err := getWalletAndAccount(*accountJSON)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	client, err := ethclient.Dial(config.getRPCURL())
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	balance, err := client.BalanceAt(context.Background(), account.Address, nil)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"address": account.Address.Hex(),
-			"balance": balance.String(),
+			"data": map[string]interface{}{
+				"address": account.Address.Hex(),
+				"balance": balance.String(),
+			},
+			"code": 0,
+			"message": "Successful balance retrieval.",
 		},
 	}, nil
 
@@ -884,26 +938,30 @@ func (b *PluginBackend) pathSignMessage(ctx context.Context, req *logical.Reques
 
 	accountJSON, err := readAccount(ctx, req, name)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	wallet, account, err := getWalletAndAccount(*accountJSON)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	hashedMessage, _ := accounts.TextAndHash([]byte(message))
 
 	signedMessage, err := wallet.SignHash(*account, []byte(hashedMessage))
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"signature":     hexutil.Encode(signedMessage),
-			"address":       account.Address,
-			"hashedMessage": hexutil.Encode(hashedMessage),
+			"data": map[string]interface{}{
+				"signature":     hexutil.Encode(signedMessage),
+				"address":       account.Address,
+				"hashedMessage": hexutil.Encode(hashedMessage),
+			},
+			"code": 0,
+			"message": "Successful message signing.",
 		},
 	}, nil
 }

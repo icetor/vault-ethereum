@@ -164,20 +164,25 @@ func (b *PluginBackend) pathWriteConfig(ctx context.Context, req *logical.Reques
 	entry, err := logical.StorageEntryJSON("config", configBundle)
 
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	if err := req.Storage.Put(ctx, entry); err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	// Return the secret
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"bound_cidr_list": configBundle.BoundCIDRList,
-			"inclusions":      configBundle.Inclusions,
-			"exclusions":      configBundle.Exclusions,
-			"rpc_url":         configBundle.RPC,
-			"chain_id":        configBundle.ChainID,
+			"data": map[string]interface{}{
+				"bound_cidr_list": configBundle.BoundCIDRList,
+				"inclusions":      configBundle.Inclusions,
+				"exclusions":      configBundle.Exclusions,
+				"rpc_url":         configBundle.RPC,
+				"chain_id":        configBundle.ChainID,
+			},
+			"code": 0,
+			"message": "Succesfull configuration change.",
+			
 		},
 	}, nil
 }
@@ -185,7 +190,7 @@ func (b *PluginBackend) pathWriteConfig(ctx context.Context, req *logical.Reques
 func (b *PluginBackend) pathReadConfig(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 	configBundle, err := b.readConfig(ctx, req.Storage)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	if configBundle == nil {
@@ -195,11 +200,15 @@ func (b *PluginBackend) pathReadConfig(ctx context.Context, req *logical.Request
 	// Return the secret
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"bound_cidr_list": configBundle.BoundCIDRList,
-			"inclusions":      configBundle.Inclusions,
-			"exclusions":      configBundle.Exclusions,
-			"rpc_url":         configBundle.RPC,
-			"chain_id":        configBundle.ChainID,
+			"data": map[string]interface{}{
+				"bound_cidr_list": configBundle.BoundCIDRList,
+				"inclusions":      configBundle.Inclusions,
+				"exclusions":      configBundle.Exclusions,
+				"rpc_url":         configBundle.RPC,
+				"chain_id":        configBundle.ChainID,
+			},
+			"code": 0,
+			"message": "Succesfull configuration query.",
 		},
 	}, nil
 }

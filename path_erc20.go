@@ -180,28 +180,28 @@ If this function is called again it overwrites the current allowance with _value
 func (b *PluginBackend) pathERC20BalanceOf(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 	config, err := b.configured(ctx, req)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	name := data.Get("name").(string)
 
 	accountJSON, err := readAccount(ctx, req, name)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	_, account, err := getWalletAndAccount(*accountJSON)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	client, err := ethclient.Dial(config.getRPCURL())
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	contractAddress := common.HexToAddress(data.Get("contract").(string))
 	instance, err := erc20.NewErc20(contractAddress, client)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	callOpts := &bind.CallOpts{}
 	erc20CallerSession := &erc20.Erc20CallerSession{
@@ -211,17 +211,17 @@ func (b *PluginBackend) pathERC20BalanceOf(ctx context.Context, req *logical.Req
 
 	bal, err := erc20CallerSession.BalanceOf(account.Address)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	tokenName, err := erc20CallerSession.Name()
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	symbol, err := erc20CallerSession.Symbol()
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	// decimals, err := erc20CallerSession.Decimals()
@@ -235,10 +235,14 @@ func (b *PluginBackend) pathERC20BalanceOf(ctx context.Context, req *logical.Req
 
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"contract": contractAddress.Hex(),
-			"symbol":   symbol,
-			"name":     tokenName,
-			"balance":  bal.String(),
+			"data": map[string]interface{}{
+				"contract": contractAddress.Hex(),
+				"symbol":   symbol,
+				"name":     tokenName,
+				"balance":  bal.String(),
+			},
+			"code": 0,
+			"message": "Successful balance query.",
 		},
 	}, nil
 
@@ -248,34 +252,40 @@ func (b *PluginBackend) pathERC20Transfer(ctx context.Context, req *logical.Requ
 	var tokens *big.Int
 	config, err := b.configured(ctx, req)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	name := data.Get("name").(string)
 
 	accountJSON, err := readAccount(ctx, req, name)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	wallet, account, err := getWalletAndAccount(*accountJSON)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	tokenAddress := common.HexToAddress(data.Get("contract").(string))
 
 	chainID := util.ValidNumber(config.ChainID)
 	if chainID == nil {
-		return nil, fmt.Errorf("invalid chain ID")
+		return &logical.Response{
+			Data: map[string]interface{}{
+				"data":    nil,
+				"code":    0,
+				"message": fmt.Sprintf("invalid chain ID"),
+			},
+		}, nil
 	}
 
 	client, err := ethclient.Dial(config.getRPCURL())
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	instance, err := erc20.NewErc20(tokenAddress, client)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	callOpts := &bind.CallOpts{}
 
@@ -286,12 +296,12 @@ func (b *PluginBackend) pathERC20Transfer(ctx context.Context, req *logical.Requ
 
 	tokenName, err := erc20CallerSession.Name()
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	symbol, err := erc20CallerSession.Symbol()
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	// decimals, err := erc20CallerSession.Decimals()
@@ -301,13 +311,13 @@ func (b *PluginBackend) pathERC20Transfer(ctx context.Context, req *logical.Requ
 
 	transactionParams, err := b.getBaseData(client, account.Address, data, "to")
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	_, ok := data.GetOk("tokens")
 	if ok {
 		tokens = util.ValidNumber(data.Get("tokens").(string))
 		if tokens == nil {
-			return nil, fmt.Errorf("number of tokens are required")
+			return util.ErrorResponse(err);
 		}
 	} else {
 		tokens = util.ValidNumber("0")
@@ -315,17 +325,17 @@ func (b *PluginBackend) pathERC20Transfer(ctx context.Context, req *logical.Requ
 
 	err = config.ValidAddress(transactionParams.Address)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	err = accountJSON.ValidAddress(transactionParams.Address)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	// tokenAmount := util.TokenAmount(tokens.Int64(), decimals)
 	tokenAmount := new(big.Int).SetInt64(tokens.Int64())
 	transactOpts, err := b.NewWalletTransactor(chainID, wallet, account)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	//transactOpts needs gas etc.
@@ -337,24 +347,28 @@ func (b *PluginBackend) pathERC20Transfer(ctx context.Context, req *logical.Requ
 
 	tx, err := tokenSession.Transfer(*transactionParams.Address, tokenAmount)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	var signedTxBuff bytes.Buffer
 	tx.EncodeRLP(&signedTxBuff)
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"contract":           tokenAddress.Hex(),
-			"symbol":             symbol,
-			"name":               tokenName,
-			"transaction_hash":   tx.Hash().Hex(),
-			"signed_transaction": hexutil.Encode(signedTxBuff.Bytes()),
-			"from":               account.Address.Hex(),
-			"to":                 transactionParams.Address.String(),
-			"amount":             tokenAmount.String(),
-			"nonce":              tx.Nonce(),
-			"gas_price":          tx.GasPrice(),
-			"gas_limit":          tx.Gas(),
+			"data": map[string]interface{}{
+				"contract":           tokenAddress.Hex(),
+				"symbol":             symbol,
+				"name":               tokenName,
+				"transaction_hash":   tx.Hash().Hex(),
+				"signed_transaction": hexutil.Encode(signedTxBuff.Bytes()),
+				"from":               account.Address.Hex(),
+				"to":                 transactionParams.Address.String(),
+				"amount":             tokenAmount.String(),
+				"nonce":              tx.Nonce(),
+				"gas_price":          tx.GasPrice(),
+				"gas_limit":          tx.Gas(),
+			},
+			"code": 0,
+			"message": "Successful transfer.",
 		},
 	}, nil
 
@@ -363,18 +377,18 @@ func (b *PluginBackend) pathERC20Transfer(ctx context.Context, req *logical.Requ
 func (b *PluginBackend) pathERC20TotalSupply(ctx context.Context, req *logical.Request, data *framework.FieldData) (*logical.Response, error) {
 	config, err := b.configured(ctx, req)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	client, err := ethclient.Dial(config.getRPCURL())
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	contractAddress := common.HexToAddress(data.Get("contract").(string))
 	instance, err := erc20.NewErc20(contractAddress, client)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	callOpts := &bind.CallOpts{}
 	erc20CallerSession := &erc20.Erc20CallerSession{
@@ -384,22 +398,22 @@ func (b *PluginBackend) pathERC20TotalSupply(ctx context.Context, req *logical.R
 
 	totalSupply, err := erc20CallerSession.TotalSupply()
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	tokenName, err := erc20CallerSession.Name()
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	symbol, err := erc20CallerSession.Symbol()
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	decimals, err := erc20CallerSession.Decimals()
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	fbal := new(big.Float)
@@ -408,10 +422,14 @@ func (b *PluginBackend) pathERC20TotalSupply(ctx context.Context, req *logical.R
 
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"contract":     contractAddress.Hex(),
-			"symbol":       symbol,
-			"name":         tokenName,
-			"total_supply": fmt.Sprintf("%.0f", value),
+			"data": map[string]interface{}{
+				"contract":     contractAddress.Hex(),
+				"symbol":       symbol,
+				"name":         tokenName,
+				"total_supply": fmt.Sprintf("%.0f", value),
+			},
+			"code": 0,
+			"message": "Successful total supply query.",
 		},
 	}, nil
 
@@ -421,33 +439,39 @@ func (b *PluginBackend) pathERC20Approve(ctx context.Context, req *logical.Reque
 	var tokens *big.Int
 	config, err := b.configured(ctx, req)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	name := data.Get("name").(string)
 
 	accountJSON, err := readAccount(ctx, req, name)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	wallet, account, err := getWalletAndAccount(*accountJSON)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	tokenAddress := common.HexToAddress(data.Get("contract").(string))
 
 	chainID := util.ValidNumber(config.ChainID)
 	if chainID == nil {
-		return nil, fmt.Errorf("invalid chain ID")
+		return &logical.Response{
+			Data: map[string]interface{}{
+				"data":    nil,
+				"code":    0,
+				"message": fmt.Sprintf("invalid chain ID"),
+			},
+		}, nil
 	}
 
 	client, err := ethclient.Dial(config.getRPCURL())
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	instance, err := erc20.NewErc20(tokenAddress, client)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	callOpts := &bind.CallOpts{}
 
@@ -458,37 +482,37 @@ func (b *PluginBackend) pathERC20Approve(ctx context.Context, req *logical.Reque
 
 	tokenName, err := erc20CallerSession.Name()
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	symbol, err := erc20CallerSession.Symbol()
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	decimals, err := erc20CallerSession.Decimals()
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	transactionParams, err := b.getBaseData(client, account.Address, data, "spender")
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	err = config.ValidAddress(transactionParams.Address)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	err = accountJSON.ValidAddress(transactionParams.Address)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	_, ok := data.GetOk("tokens")
 	if ok {
 		tokens = util.ValidNumber(data.Get("tokens").(string))
 		if tokens == nil {
-			return nil, fmt.Errorf("number of tokens are required")
+			return util.ErrorResponse(err);
 		}
 	} else {
 		tokens = util.ValidNumber("0")
@@ -496,7 +520,7 @@ func (b *PluginBackend) pathERC20Approve(ctx context.Context, req *logical.Reque
 	tokenAmount := util.TokenAmount(tokens.Int64(), decimals)
 	transactOpts, err := b.NewWalletTransactor(chainID, wallet, account)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	//transactOpts needs gas etc.
@@ -508,24 +532,28 @@ func (b *PluginBackend) pathERC20Approve(ctx context.Context, req *logical.Reque
 
 	tx, err := tokenSession.Approve(*transactionParams.Address, tokenAmount)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	var signedTxBuff bytes.Buffer
 	tx.EncodeRLP(&signedTxBuff)
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"contract":           tokenAddress.Hex(),
-			"symbol":             symbol,
-			"name":               tokenName,
-			"transaction_hash":   tx.Hash().Hex(),
-			"signed_transaction": hexutil.Encode(signedTxBuff.Bytes()),
-			"from":               account.Address.Hex(),
-			"to":                 transactionParams.Address.String(),
-			"amount":             tokenAmount.String(),
-			"nonce":              tx.Nonce(),
-			"gas_price":          tx.GasPrice(),
-			"gas_limit":          tx.Gas(),
+			"data": map[string]interface{}{
+				"contract":           tokenAddress.Hex(),
+				"symbol":             symbol,
+				"name":               tokenName,
+				"transaction_hash":   tx.Hash().Hex(),
+				"signed_transaction": hexutil.Encode(signedTxBuff.Bytes()),
+				"from":               account.Address.Hex(),
+				"to":                 transactionParams.Address.String(),
+				"amount":             tokenAmount.String(),
+				"nonce":              tx.Nonce(),
+				"gas_price":          tx.GasPrice(),
+				"gas_limit":          tx.Gas(),
+			},
+			"code": 0,
+			"message": "Successful approve.",
 		},
 	}, nil
 
@@ -534,34 +562,40 @@ func (b *PluginBackend) pathERC20TransferFrom(ctx context.Context, req *logical.
 	var tokens *big.Int
 	config, err := b.configured(ctx, req)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	name := data.Get("name").(string)
 
 	accountJSON, err := readAccount(ctx, req, name)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	wallet, account, err := getWalletAndAccount(*accountJSON)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	tokenAddress := common.HexToAddress(data.Get("contract").(string))
 
 	chainID := util.ValidNumber(config.ChainID)
 	if chainID == nil {
-		return nil, fmt.Errorf("invalid chain ID")
+		return &logical.Response{
+			Data: map[string]interface{}{
+				"data":    nil,
+				"code":    0,
+				"message": fmt.Sprintf("invalid chain ID"),
+			},
+		}, nil
 	}
 
 	client, err := ethclient.Dial(config.getRPCURL())
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	instance, err := erc20.NewErc20(tokenAddress, client)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	callOpts := &bind.CallOpts{}
 
@@ -572,37 +606,37 @@ func (b *PluginBackend) pathERC20TransferFrom(ctx context.Context, req *logical.
 
 	tokenName, err := erc20CallerSession.Name()
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	symbol, err := erc20CallerSession.Symbol()
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	decimals, err := erc20CallerSession.Decimals()
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	transactionParams, err := b.getBaseData(client, account.Address, data, "from")
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	err = config.ValidAddress(transactionParams.Address)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	err = accountJSON.ValidAddress(transactionParams.Address)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 	_, ok := data.GetOk("tokens")
 	if ok {
 		tokens = util.ValidNumber(data.Get("tokens").(string))
 		if tokens == nil {
-			return nil, fmt.Errorf("number of tokens are required")
+			return util.ErrorResponse(err);
 		}
 	} else {
 		tokens = util.ValidNumber("0")
@@ -610,7 +644,7 @@ func (b *PluginBackend) pathERC20TransferFrom(ctx context.Context, req *logical.
 	tokenAmount := util.TokenAmount(tokens.Int64(), decimals)
 	transactOpts, err := b.NewWalletTransactor(chainID, wallet, account)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	//transactOpts needs gas etc.
@@ -622,24 +656,28 @@ func (b *PluginBackend) pathERC20TransferFrom(ctx context.Context, req *logical.
 
 	tx, err := tokenSession.TransferFrom(*transactionParams.Address, account.Address, tokenAmount)
 	if err != nil {
-		return nil, err
+		return util.ErrorResponse(err);
 	}
 
 	var signedTxBuff bytes.Buffer
 	tx.EncodeRLP(&signedTxBuff)
 	return &logical.Response{
 		Data: map[string]interface{}{
-			"contract":           tokenAddress.Hex(),
-			"symbol":             symbol,
-			"name":               tokenName,
-			"transaction_hash":   tx.Hash().Hex(),
-			"signed_transaction": hexutil.Encode(signedTxBuff.Bytes()),
-			"from":               account.Address.Hex(),
-			"to":                 transactionParams.Address.String(),
-			"amount":             tokenAmount.String(),
-			"nonce":              tx.Nonce(),
-			"gas_price":          tx.GasPrice(),
-			"gas_limit":          tx.Gas(),
+			"data": map[string]interface{}{
+				"contract":           tokenAddress.Hex(),
+				"symbol":             symbol,
+				"name":               tokenName,
+				"transaction_hash":   tx.Hash().Hex(),
+				"signed_transaction": hexutil.Encode(signedTxBuff.Bytes()),
+				"from":               account.Address.Hex(),
+				"to":                 transactionParams.Address.String(),
+				"amount":             tokenAmount.String(),
+				"nonce":              tx.Nonce(),
+				"gas_price":          tx.GasPrice(),
+				"gas_limit":          tx.Gas(),
+			},
+			"code": 0,
+			"message": "Successful transfer from.",
 		},
 	}, nil
 
