@@ -1,5 +1,6 @@
-# Use the official HashiCorp Vault image (update to your desired version)
-FROM hashicorp/vault:1.17
+# Use the official HashiCorp Vault image
+ARG VERSION=1.17
+FROM hashicorp/vault:${VERSION}
 
 # ARG to force Docker not to use cache when building
 ARG always_upgrade

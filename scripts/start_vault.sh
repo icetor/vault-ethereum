@@ -12,7 +12,7 @@ fi
 VERSION=$1
 
 # Step 1: Build the corresponding Vault Docker image
-docker build -f ../Dockerfile.vaultbuild --build-arg always_upgrade="$DATE" -t icecorp/vault:$VERSION ..
+docker build -f ../Dockerfile.vaultbuild --build-arg always_upgrade="$DATE" --build-arg VERSION=$VERSION -t hashicorp/vault:$VERSION ..
 
 # Check if the docker build command was successful
 if [ $? -ne 0 ]; then
@@ -47,7 +47,7 @@ docker run -d \
   -v "$CONFIG_DIR":/home/vault/config:rw \
   --user 0:0 \
   --restart always \
-  icecorp/vault:$VERSION /home/vault/config/entrypoint.sh
+  hashicorp/vault:$VERSION /home/vault/config/entrypoint.sh
 
 # Check if the container started successfully
 if [ $? -ne 0 ]; then

@@ -6,7 +6,7 @@ docker-build:
 	docker build --build-arg always_upgrade="$(DATE)" -t cypherhat/vault-ethereum:latest .
 
 docker-vault-build:
-	docker build -f Dockerfile.vaultbuild --build-arg always_upgrade="$(DATE)" -t icecorp/vault:1.17 .
+	docker build -f Dockerfile.vaultbuild --build-arg always_upgrade="$(DATE)" -t hashicorp/vault:1.17 .
 
 docker-plugin-build:
 	docker build -f Dockerfile.pluginbuild -t vault-ethereum-builder .
