@@ -2,16 +2,15 @@
 
 DATE=$(date +'%s')
 
-# Check if a version was provided as an argument
+# Use provided version or default to "1.17" if not provided.
 if [ -z "$1" ]; then
-  echo "Usage: $0 <version>"
-  exit 1
+  echo "No version provided. Using default version: 1.17"
+  VERSION=1.17
+else
+  VERSION=$1
 fi
 
-# Store the version parameter
-VERSION=$1
-
-# Step 1: Build the corresponding Vault Docker image
+# Step 1: Build the corresponding Vault Docker image using the Dockerfile in the current directory
 docker build -f ../Dockerfile.vaultbuild --build-arg always_upgrade="$DATE" --build-arg VERSION=$VERSION -t hashicorp/vault:$VERSION ..
 
 # Check if the docker build command was successful
@@ -21,7 +20,6 @@ if [ $? -ne 0 ]; then
 fi
 
 # Step 2: Ensure the Docker network exists
-# Check if the network exists, if not create it
 if ! docker network ls | grep -q production; then
   echo "Creating 'production' network..."
   docker network create production
@@ -37,7 +35,7 @@ if docker ps -a --format '{{.Names}}' | grep -q vault_server; then
 fi
 
 # Get the absolute path for the config directory
-CONFIG_DIR=$(realpath ../docker/config)
+CONFIG_DIR=$(realpath ../config)
 
 # Step 4: Create and run the container using the absolute path
 docker run -d \
