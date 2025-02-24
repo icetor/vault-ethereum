@@ -10,9 +10,21 @@ else
   VERSION=$1
 fi
 
-# Step 1: Build the corresponding Vault Docker image using the Dockerfile in the current directory
-docker build -f ../Dockerfile.vaultbuild --build-arg always_upgrade="$DATE" --build-arg VERSION=$VERSION -t hashicorp/vault:$VERSION ..
+# Use provided port or default to "9200" if not provided.
+if [ -z "$2" ]; then
+  echo "No port provided. Using default port: 9200"
+  PORT=9200
+else
+  PORT=$2
+fi
 
+# Step 1: Build the corresponding Vault Docker image using the Dockerfile in the current directory
+docker build -f ../Dockerfile.vaultbuild \
+  --build-arg always_upgrade="$DATE" \
+  --build-arg VERSION=$VERSION \
+  --build-arg PORT=$PORT \
+  -t hashicorp/vault:$VERSION ..
+  
 # Check if the docker build command was successful
 if [ $? -ne 0 ]; then
   echo "Docker build failed. Exiting."
@@ -41,7 +53,7 @@ CONFIG_DIR=$(realpath ../config)
 docker run -d \
   --name vault_server \
   --network production \
-  -p 9200:9200 \
+  -p $PORT:$PORT \
   -v "$CONFIG_DIR":/home/vault/config:rw \
   --user 0:0 \
   --restart always \
@@ -53,4 +65,4 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-echo "Vault container is up and running with version $VERSION."
+echo "Vault container is up and running with version $VERSION on port $PORT."
