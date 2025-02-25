@@ -21,10 +21,8 @@ README.md
 config/README.md
 config/operator.json
 config/unseal.json
-config/root.crt
-config/root.key
-config/root.srl
-config/vault.cnf
-config/vault.crt
-config/vault.csr
-config/vault.key
+config/certificates/*.crt
+config/certificates/*.key
+config/certificates/*.srl
+config/certificates/*.csr
+scripts/out

@@ -1,106 +1,117 @@
 #!/bin/bash
 
 CONFIG_DIR="/home/vault/config"
-INIT_SCRIPT="/home/vault/config/init.sh"
-CA_CERT="$CONFIG_DIR/root.crt"
-CA_KEY="$CONFIG_DIR/root.key"
-TLS_KEY="$CONFIG_DIR/vault.key"
-TLS_CERT="$CONFIG_DIR/vault.crt"
-OPENSSL_CONFIG="$CONFIG_DIR/vault.cnf"
-CSR="$CONFIG_DIR/vault.csr"
+CERTS_DIR="$CONFIG_DIR/certificates"
+INIT_SCRIPT="$CONFIG_DIR/init.sh"
+CA_CERT="$CERTS_DIR/root.crt"
+CA_KEY="$CERTS_DIR/root.key"
+TLS_KEY="$CERTS_DIR/vault.key"
+TLS_CERT="$CERTS_DIR/vault.crt"
+OPENSSL_CONFIG="$CERTS_DIR/vault.cnf"
+CSR="$CERTS_DIR/vault.csr"
+
+# Client certificate variables
+CLIENT_KEY="$CERTS_DIR/vault-client.key"
+CLIENT_CERT="$CERTS_DIR/vault-client.crt"
+CLIENT_CSR="$CERTS_DIR/vault-client.csr"
 
 export VAULT_ADDR="https://127.0.0.1:9200"
 export VAULT_CACERT="$CA_CERT"
-
-function create_config {
-
-	cat > "$OPENSSL_CONFIG" << EOF
-
-[req]
-default_bits = 2048
-encrypt_key  = no
-default_md   = sha256
-prompt       = no
-utf8         = yes
-
-# Speify the DN here so we aren't prompted (along with prompt = no above).
-distinguished_name = req_distinguished_name
-
-# Extensions for SAN IP and SAN DNS
-req_extensions = v3_req
-
-# Be sure to update the subject to match your organization.
-[req_distinguished_name]
-C  = US
-ST = Maryland
-L  = Immutability
-O  = Immutability LLC
-CN = localhost
-
-# Allow client and server auth. You may want to only allow server auth.
-# Link to SAN names.
-[v3_req]
-basicConstraints     = CA:FALSE
-subjectKeyIdentifier = hash
-keyUsage             = digitalSignature, keyEncipherment
-extendedKeyUsage     = clientAuth, serverAuth
-subjectAltName       = @alt_names
-
-# Alternative names are specified as IP.# and DNS.# for IPs and
-# DNS accordingly.
-[alt_names]
-IP.1  = 127.0.0.1
-DNS.1 = localhost
-EOF
-}
+export VAULT_CLIENT_CERT="$CLIENT_CERT"
+export VAULT_CLIENT_KEY="$CLIENT_KEY"
 
 function gencerts {
+    # Verify that the external OpenSSL config file exists
+    if [ ! -f "$OPENSSL_CONFIG" ]; then
+        echo "Error: External OpenSSL config file $OPENSSL_CONFIG not found. Exiting."
+        exit 1
+    fi
 
-    create_config
-	openssl req \
-	-new \
-	-sha256 \
-	-newkey rsa:2048 \
-	-days 120 \
-	-nodes \
-	-x509 \
-	-subj "/C=US/ST=Maryland/L=Immutability/O=Immutability LLC" \
-	-keyout "$CA_KEY" \
-	-out "$CA_CERT"
+    # Generate a self-signed CA certificate (used to sign the Vault server cert)
+    openssl req \
+        -new \
+        -sha256 \
+        -newkey rsa:2048 \
+        -days 36500 \
+        -nodes \
+        -x509 \
+        -subj "/C=US/ST=Maryland/L=icecorp/O=icecorp" \
+        -keyout "$CA_KEY" \
+        -out "$CA_CERT"
 
-	openssl genrsa -out "$TLS_KEY" 2048
+    # Generate a private key for the Vault server
+    openssl genrsa -out "$TLS_KEY" 2048
 
-	openssl req \
-	-new -key "$TLS_KEY" \
-	-out "$CSR" \
-	-config "$OPENSSL_CONFIG"
+    # Generate a Certificate Signing Request (CSR) using the external OpenSSL config
+    openssl req \
+        -new -key "$TLS_KEY" \
+        -out "$CSR" \
+        -config "$OPENSSL_CONFIG"
 
-	openssl x509 \
-	-req \
-	-days 120 \
-	-in "$CSR" \
-	-CA "$CA_CERT" \
-	-CAkey "$CA_KEY" \
-	-CAcreateserial \
-	-sha256 \
-	-extensions v3_req \
-	-extfile "$OPENSSL_CONFIG" \
-	-out "$TLS_CERT"
+    # Sign the CSR with the CA certificate to produce the Vault server certificate
+    openssl x509 \
+        -req \
+        -days 36500 \
+        -in "$CSR" \
+        -CA "$CA_CERT" \
+        -CAkey "$CA_KEY" \
+        -CAcreateserial \
+        -sha256 \
+        -extensions v3_req \
+        -extfile "$OPENSSL_CONFIG" \
+        -out "$TLS_CERT"
 
-	openssl x509 -in "$TLS_CERT" -noout -text
-    chown -R nobody:nobody $CONFIG_DIR && chmod -R 777 $CONFIG_DIR
+    # Display server certificate details
+    openssl x509 -in "$TLS_CERT" -noout -text
+
+    # --- Generate the client certificate ---
+    # Generate a private key for the client
+    openssl genrsa -out "$CLIENT_KEY" 2048
+
+    # Generate a CSR for the client certificate (using a simple subject)
+    openssl req -new -key "$CLIENT_KEY" -out "$CLIENT_CSR" -subj "/CN=vault-client"
+
+    # Sign the client CSR with the CA certificate to produce the client certificate
+    openssl x509 \
+        -req \
+        -days 36500 \
+        -in "$CLIENT_CSR" \
+        -CA "$CA_CERT" \
+        -CAkey "$CA_KEY" \
+        -CAcreateserial \
+        -sha256 \
+        -out "$CLIENT_CERT"
+
+    # Display client certificate details
+    openssl x509 -in "$CLIENT_CERT" -noout -text
+
+    # Adjust permissions for the certificates directory
+    chown -R nobody:nobody "$CERTS_DIR" && chmod -R 777 "$CERTS_DIR"
 }
 
-mkdir -p $CONFIG_DIR
-gencerts
+# Check if certificates exist; if not, generate them.
+if [ ! -f "$CA_CERT" ] || [ ! -f "$TLS_KEY" ] || [ ! -f "$TLS_CERT" ] || [ ! -f "$CLIENT_CERT" ] || [ ! -f "$CLIENT_KEY" ]; then
+    echo "Certificates not found. Generating certificates..."
+    gencerts
+else
+    echo "Certificates already exist. Skipping generation."
+fi
 
-nohup vault server -log-level=debug -config /home/vault/config/vault.hcl &
+# Start the Vault server in the background
+if [ ! -f "$CONFIG_DIR/vault.hcl" ]; then
+    echo "Error: Vault configuration file $CONFIG_DIR/vault.hcl not found. Exiting."
+    exit 1
+fi
+
+nohup vault server -log-level=debug -config "$CONFIG_DIR/vault.hcl" &
 VAULT_PID=$!
 
 which bash
 
+# Run the initialization script if it exists
 if [ -f "$INIT_SCRIPT" ]; then
-    /bin/bash $INIT_SCRIPT
+    /bin/bash "$INIT_SCRIPT"
 fi
 
+# Wait for the Vault server process to exit
 wait $VAULT_PID

@@ -14,7 +14,8 @@ ui = "false"
 plugin_directory = "/home/vault/plugins"
 listener "tcp" {
 address = "0.0.0.0:9200"
-tls_cert_file = "/home/vault/config/vault.crt"
-tls_client_ca_file = "/home/vault/config/root.crt"
-tls_key_file = "/home/vault/config/vault.key"
+tls_cert_file = "/home/vault/config/certificates/vault.crt"
+tls_require_and_verify_client_cert = true
+tls_client_ca_file = "/home/vault/config/certificates/root.crt"
+tls_key_file = "/home/vault/config/certificates/vault.key"
 }
