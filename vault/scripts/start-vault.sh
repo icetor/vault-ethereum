@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Determine the directory of this script and the project root.
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+
 DATE=$(date +'%s')
 
 # Use provided version or default to "1.17" if not provided.
@@ -18,12 +22,12 @@ else
   PORT=$2
 fi
 
-# Step 1: Build the corresponding Vault Docker image using the Dockerfile in the current directory
-docker build -f ../Dockerfile.vaultbuild \
-  --build-arg always_upgrade="$DATE" \
+# Step 1: Build the corresponding Vault Docker image using the Dockerfile in the project directory
+docker build -f "$PROJECT_DIR/Dockerfile.vaultbuild" \
+  --build-arg always_upgrade=$DATE \
   --build-arg VERSION=$VERSION \
   --build-arg PORT=$PORT \
-  -t hashicorp/vault:$VERSION ..
+  -t hashicorp/vault:$VERSION "$PROJECT_DIR"
   
 # Check if the docker build command was successful
 if [ $? -ne 0 ]; then
@@ -41,13 +45,8 @@ if ! docker network ls | grep -q production; then
   fi
 fi
 
-# Step 3: Stop and remove the existing container if it exists
-if docker ps -a --format '{{.Names}}' | grep -q vault_server; then
-  docker stop vault_server && docker rm vault_server
-fi
-
-# Get the absolute path for the config directory
-CONFIG_DIR=$(realpath ../config)
+# Get the absolute path for the config directory from the project root
+CONFIG_DIR=$(realpath "$PROJECT_DIR/config")
 
 # Step 4: Create and run the container using the absolute path
 docker run -d \

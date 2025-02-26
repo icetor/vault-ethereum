@@ -4,8 +4,10 @@ FROM hashicorp/vault:${VERSION}
 
 # ARG to force Docker not to use cache when building
 ARG always_upgrade
-# ARG for port with default value 9300
+# ARG for port with default value 9200
 ARG PORT=9200
+
+USER root
 
 # Update the base image and install necessary packages
 RUN echo ${always_upgrade} > /dev/null \
@@ -19,7 +21,7 @@ USER vault
 # Set the working directory
 WORKDIR /app
 
-# Create necessary directories (if any)
+# Create necessary directories
 RUN mkdir -p /vault/config && mkdir -p /home/vault/plugins
 
 # Set the port as an environment variable
@@ -29,4 +31,8 @@ ENV PORT=${PORT}
 EXPOSE ${PORT}
 
 # Healthcheck to ensure Vault is running on the specified port
-HEALTHCHECK CMD curl --fail --silent --show-error http://127.0.0.1:${PORT}/v1/sys/health || exit 1
+HEALTHCHECK CMD curl --fail --silent --show-error \
+    --cert /home/vault/config/certificates/vault-client.crt \
+    --key /home/vault/config/certificates/vault-client.key \
+    --cacert /home/vault/config/certificates/root.crt \
+    https://127.0.0.1:${PORT}/v1/sys/health || exit 1

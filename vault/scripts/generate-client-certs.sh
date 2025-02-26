@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # Create output directory if it doesn't exist
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 OUTPUT_DIR="$(pwd)/out"
 mkdir -p "$OUTPUT_DIR"
 
