@@ -1,0 +1,29 @@
+# Declare the build argument for architecture.
+ARG ARCHITECTURE
+
+# Use the official Go image for the specified architecture.
+FROM --platform=linux/${ARCHITECTURE} golang:1.17-alpine AS builder
+
+# Install necessary build dependencies.
+RUN apk add --update alpine-sdk && \
+    apk update && apk add git openssh gcc musl-dev linux-headers
+
+WORKDIR /build
+
+# Copy the module files from the build context (which is now the plugin folder).
+COPY go.mod .
+COPY go.sum .
+
+# Download dependencies.
+RUN go mod download
+
+# Copy the entire plugin source code from the build context.
+COPY . .
+
+# Build the plugin binary and generate the SHA256SUMS file.
+RUN mkdir -p /build/bin && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=${ARCHITECTURE} go build -a -ldflags '-extldflags "-static"' -o /build/bin/plugin . && \
+    sha256sum /build/bin/plugin > /build/bin/SHA256SUMS
+
+# Keep the container running for the build artifacts to be copied.
+CMD ["sleep", "infinity"]

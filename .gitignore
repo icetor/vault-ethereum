@@ -5,7 +5,7 @@ vault/config/raft/*
 !vault/config/raft/.gitkeep
 **/test/data
 **/releases/*
-**/binaries
+plugins/scripts/out
 .DS_Store
 **/.DS_Store
 **/helper/*.txt

@@ -1,65 +1,50 @@
-## TODO modify this
-# Vault Ethereum Plugin v0.3.0
-
-### Start Vault
-```bash
-cd ./scripts
-bash ./start_vault.sh
-```
-
-### Deployment Finalization
-It is advised to save the contents of operator.json to a safe place and remove it from the filesystem.
-
-# Prepare a policy to deploy plugins to the vault environment
-Use the following example policy and assign it to the user.
-```json
-{
-  "policy": "path \"sys/plugins/catalog/secret/vault-ethereum\" {\n  capabilities = [\"create\", \"update\", \"delete\", \"read\", \"sudo\"]\n}\n\npath \"sys/plugins/pins/secret/vault-ethereum\" {\n  capabilities = [\"create\", \"update\", \"delete\", \"read\", \"sudo\"]\n}\n\npath \"sys/plugins/reload/secret/vault-ethereum\" {\n  capabilities = [\"update\", \"sudo\"]\n}\n\npath \"sys/plugins/pins\" {\n  capabilities = [\"read\", \"list\"]\n}\n\npath \"sys/plugins/pins/*\" {\n  capabilities = [\"read\", \"list\"]\n}\n\npath \"sys/mounts\" {\n  capabilities = [\"read\", \"list\"]\n}\n\npath \"sys/mounts/vault-ethereum\" {\n  capabilities = [\"create\", \"update\", \"read\", \"sudo\"]\n}\n\npath \"sys/plugins/catalog\" {\n  capabilities = [\"read\", \"list\"]\n}\n"
-}
-```
-
-# Deploy plugin binary by either setting following parameters in environment or providing during script phase.
-```bash
-export PLUGIN_BINARY_PATH=
-export VAULT_CONTAINER_ID=
-export VAULT_TOKEN=
-export VAULT_ADDR=
-export PLUGIN_SHA256=
-export PLUGIN_VERSION=
-
-bash ./scripts/deploy_plugin.sh
-```
-
-### Ethereum Account Operations
-  - **Create Account:** `/accounts/{name}`
-    - Create an Ethereum account using a generated or provided passphrase.
-  - **Get Account Balance:** `/accounts/{name}/balance`
-    - Return the balance for an account.
-  - **Deploy Smart Contract:** `/accounts/{name}/deploy`
-    - Deploy a smart contract from an account.
-  - **ERC-20 Operations:**
-    - **Approve Spending:** `/accounts/{name}/erc20/approve`
-      - Allow spender to withdraw from your account.
-    - **Get ERC-20 Balance:** `/accounts/{name}/erc20/balanceOf`
-      - Return the balance for an address's ERC-20 holdings.
-    - **Get ERC-20 Total Supply:** `/accounts/{name}/erc20/totalSupply`
-      - Return the total supply for an ERC-20 token.
-    - **Transfer ERC-20:** `/accounts/{name}/erc20/transfer`
-      - Transfer ERC-20 holdings to another address.
-    - **Transfer From ERC-20:** `/accounts/{name}/erc20/transferFrom`
-      - Transfer ERC-20 holdings from another address to this address.
-  - **Signing Operations:**
-    - **Sign Message:** `/accounts/{name}/sign`
-      - Sign a message.
-    - **Sign Transaction:** `/accounts/{name}/sign-tx`
-      - Sign a transaction.
-  - **Transfer ETH:** `/accounts/{name}/transfer`
-    - Send ETH from an account.
-  - **List Accounts:** `/accounts/`
-    - List all Ethereum accounts at this path.
-  ### Plugin Configuration
-  - **Configure Plugin:** `/config`
-    - Configure the Vault Ethereum plugin.
-  ### Ethereum Unit Conversion
-  - **Convert Units:** `/convert`
-    - Convert any Ethereum unit to another.
+# Vault Ethereum  
+ 
+Vault Ethereum is an extension to the standard Vault deployment that integrates Ethereum functionalities directly into your secure secret management infrastructure. This repository provides both the core Vault instance and the Ethereum plugin, enabling you to interact with Ethereum networks in a secure, auditable, and scalable manner.  
+ 
+## Overview  
+ 
+Vault Ethereum is designed to:  
+- **Securely Manage Secrets:** Leverage Vault’s robust secret management capabilities to protect your Ethereum keys and credentials.  
+- **Integrate with Ethereum:** Seamlessly interact with Ethereum networks, smart contracts, and decentralized applications via a dedicated plugin.  
+- **Simplify Operations:** Provide straightforward scripts and configuration files to build, deploy, and manage both Vault and its Ethereum functionalities.  
+ 
+## Features  
+ 
+- **Vault Integration:**  
+  - Utilizes HashiCorp Vault for secure secret storage and dynamic credential generation.  
+  - Supports TLS and mTLS for secure communication.  
+ 
+- **Ethereum Plugin:**  
+  - Build and deploy an Ethereum plugin for direct blockchain interaction.  
+  - Manage Ethereum keys, addresses, and transaction signing within Vault.  
+ 
+- **Containerized Deployment:**  
+  - Dockerized setup for both Vault and the Ethereum plugin ensures consistent environments.  
+  - Pre-configured Dockerfiles and scripts simplify the build and deployment process. 
+ 
+## Prerequisites  
+ 
+- [Docker](https://docs.docker.com/get-docker/) for containerized deployment.  
+- [HashiCorp Vault](https://www.vaultproject.io/) for secret management.  
+- Basic knowledge of Ethereum and smart contract development (if using the Ethereum plugin).  
+- Familiarity with command-line interfaces and shell scripting.  
+ 
+## Getting Started  
+ 
+### 1. Vault Operations  
+ 
+To start or interact with the Vault instance, please refer to the detailed documentation located in the [vault/docs](vault/docs) directory. This documentation covers:  
+- Initialization and unsealing procedures.
+- TLS certificate configuration and mTLS enforcement.
+ 
+### 2. Ethereum Plugin  
+ 
+To build or deploy the Vault Ethereum plugin, please refer to the documentation available in the [plugins/docs](plugins/docs) directory. Here you will find:  
+- Build instructions for the Ethereum plugin Docker image.  
+- Deployment scripts and configuration guidelines.
+ 
+## Repository Structure  
+ 
+- **vault/**: Contains all configurations and scripts related to the Vault instance.  
+- **plugins/**: Holds the source code and Docker configurations for the Ethereum plugin.

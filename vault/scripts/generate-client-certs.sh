@@ -3,7 +3,7 @@
 # Create output directory if it doesn't exist
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-OUTPUT_DIR="$(pwd)/out"
+OUTPUT_DIR="$SCRIPT_DIR/out"
 mkdir -p "$OUTPUT_DIR"
 
 # Prompt for inputs

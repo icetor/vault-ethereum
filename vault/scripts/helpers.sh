@@ -35,9 +35,7 @@ function clear() {
     fi
 
     echo "Clearing vault data..."
-    echo "rm $OPERATOR_JSON"
-    rm "$OPERATOR_JSON"
-    rm "$UNSEAL_JSON"
+    rm $PROJECT_DIR/config/operator.json
     rm $PROJECT_DIR/config/certificates/*.key
     rm $PROJECT_DIR/config/certificates/*.crt
     rm $PROJECT_DIR/config/certificates/*.srl
