@@ -1,7 +1,6 @@
 #!/bin/bash
 
 OPERATOR_JSON="/home/vault/config/operator.json"
-UNSEAL_JSON="/home/vault/config/unseal.json"
 
 function banner() {
   echo "+----------------------------------------------------------------------------------+"
@@ -13,12 +12,8 @@ function banner() {
 
 function unseal() {
     banner "Unsealing $VAULT_ADDR..."
-    if [ -f "$UNSEAL_JSON" ]; then
-        UNSEAL=$(jq -r '.unseal_keys_hex[0]' "$UNSEAL_JSON")
-        vault operator unseal $UNSEAL
-    else
-        echo "Unseal file $UNSEAL_JSON not found!"
-    fi
+    UNSEAL=$(jq -r '.unseal_keys_hex[0]' "$OPERATOR_JSON")
+    vault operator unseal "$UNSEAL"
 }
 
 function status() {
@@ -32,11 +27,15 @@ function init() {
 }
 
 sleep 20
-if [ -f "$UNSEAL_JSON" ]; then
-    unseal
-    status
+
+# Check Vault's initialization status using its own status command.
+if vault status | grep -q 'Initialized.*true'; then
+  banner "Vault has already been initialized. Skipping the initialization process."
+  if vault status | grep -q 'Sealed.*true'; then
+    banner "Vault is currently sealed. It must be unsealed to proceed with operations."
+  fi
 else
-    init
-    unseal
-    status
+  init
+  unseal
+  status
 fi
