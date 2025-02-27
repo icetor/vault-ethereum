@@ -42,23 +42,12 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# Step 2: Ensure the Docker network exists
-if ! docker network ls | grep -q production; then
-  echo "Creating 'production' network..."
-  docker network create production
-  if [ $? -ne 0 ]; then
-    echo "Failed to create 'production' network. Exiting."
-    exit 1
-  fi
-fi
-
 # Get the absolute path for the config directory from the project root
 CONFIG_DIR=$(realpath "$PROJECT_DIR/config")
 
-# Step 4: Create and run the container using the absolute path
+# Step 2: Create and run the container using the absolute path
 docker run -d \
   --name $CONTAINER_NAME \
-  --network production \
   -p $PORT:9200 \
   -v "$CONFIG_DIR":/home/vault/config:rw \
   --user 0:0 \
