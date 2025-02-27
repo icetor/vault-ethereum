@@ -44,11 +44,12 @@ This document provides instructions for starting a new Vault instance using Dock
 ## How To Start  
  
 1. **Run the Start Script:**  
-   Execute the `start_vault.sh` script with optional parameters for Vault version and port:  
+   Execute the `start_vault.sh` script with optional parameters for Vault version, port and container name:  
    ```bash
-   bash ./start_vault.sh X.XX XXXX
+   bash ./start_vault.sh X.XX XXXX XXXXXX
    ```  
-   - If no version is provided, the script defaults to version `1.17`.  
-   - If no port is provided, the script defaults to port `9200`.  
+   - If no version is provided, the script defaults to version `1.17`.
+   - If no port is provided, the script defaults to port `9200`.
+   - If no container name is provided, the script defaults to name `vault_server`.
  
-After running the script, Vault will be built, and the container will start with the specified configuration.
+After running the script, Vault will be built, and the container will start with the specified configuration. Enjoy your secure Vault instance!
