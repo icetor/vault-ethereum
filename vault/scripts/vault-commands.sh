@@ -13,7 +13,11 @@ OPERATOR_SECRETS=$(cat $OPERATOR_JSON)
 export VAULT_CACERT="$PROJECT_DIR/config/certificates/root.crt"
 export VAULT_CLIENT_CERT="$PROJECT_DIR/config/certificates/vault-client.crt"
 export VAULT_CLIENT_KEY="$PROJECT_DIR/config/certificates/vault-client.key"
-export VAULT_ADDR=https://localhost:9200
+
+# Prompt the user for the Vault address with a default value.
+read -p "Enter Vault address (default: https://localhost:9200): " input_vault_addr
+VAULT_ADDRESS="${input_vault_addr:-https://localhost:9200}"
+export VAULT_ADDR=$VAULT_ADDRESS
 
 function authenticate() {
     echo "Authenticating to $VAULT_ADDR as root"
@@ -33,16 +37,24 @@ function status() {
 }
 
 if [ "$#" -ne 1 ]; then
-    echo "Illegal number of parameters"
+    echo "Usage: $0 <command>"
     exit 1
 fi
 
-if [ $COMMAND = "auth" ]; then
-    authenticate
-elif [ $COMMAND = "unseal" ]; then
-    authenticate
-    unseal
-elif [ $COMMAND = "status" ]; then
-    authenticate
-    status
-fi
+case $COMMAND in
+    auth)
+        authenticate
+        ;;
+    unseal)
+        authenticate
+        unseal
+        ;;
+    status)
+        authenticate
+        status
+        ;;
+    *)
+        echo "Unknown command: $COMMAND"
+        exit 1
+        ;;
+esac

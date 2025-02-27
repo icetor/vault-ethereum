@@ -26,7 +26,6 @@ fi
 docker build -f "$PROJECT_DIR/Dockerfile.vaultbuild" \
   --build-arg always_upgrade=$DATE \
   --build-arg VERSION=$VERSION \
-  --build-arg PORT=$PORT \
   -t hashicorp/vault:$VERSION "$PROJECT_DIR"
   
 # Check if the docker build command was successful
@@ -52,7 +51,7 @@ CONFIG_DIR=$(realpath "$PROJECT_DIR/config")
 docker run -d \
   --name vault_server \
   --network production \
-  -p $PORT:$PORT \
+  -p $PORT:9200 \
   -v "$CONFIG_DIR":/home/vault/config:rw \
   --user 0:0 \
   --restart always \
