@@ -27,7 +27,7 @@ if [ -z "$3" ]; then
   echo "No container name provided. Using default name: vault_server"
   CONTAINER_NAME=vault_server
 else
-  PORT=$3
+  CONTAINER_NAME=$3
 fi
 
 # Step 1: Build the corresponding Vault Docker image using the Dockerfile in the project directory
