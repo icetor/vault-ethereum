@@ -8,22 +8,24 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 
 function remove_container() {
-    read -p "Are you sure you want to stop and remove Vault docker container? This action cannot be undone. (y/N): " confirmation
+    read -p "Enter the container name to stop and remove (default: vault_server): " container_name
+    container_name="${container_name:-vault_server}"
+    
+    read -p "Are you sure you want to stop and remove container '${container_name}'? This action cannot be undone. (y/N): " confirmation
     if [[ ! "$confirmation" =~ ^[Yy]$ ]]; then
         echo "Clear command aborted."
         exit 1
     fi
 
-
-    if docker ps --format '{{.Names}}' | grep -q "^vault_server$"; then
-        echo "Stopping vault_server..."
-        docker stop vault_server
+    if docker ps --format '{{.Names}}' | grep -q "^${container_name}$"; then
+        echo "Stopping ${container_name}..."
+        docker stop ${container_name}
     fi
-    if docker ps -a --format '{{.Names}}' | grep -q "^vault_server$"; then
-        echo "Removing vault_server..."
-        docker rm vault_server
+    if docker ps -a --format '{{.Names}}' | grep -q "^${container_name}$"; then
+        echo "Removing ${container_name}..."
+        docker rm ${container_name}
     else
-        echo "vault_server container not found."
+        echo "Container '${container_name}' not found."
     fi
 }
 

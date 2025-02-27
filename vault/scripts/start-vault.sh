@@ -22,6 +22,14 @@ else
   PORT=$2
 fi
 
+# Use provided container name or default to "vault_server" if not provided.
+if [ -z "$3" ]; then
+  echo "No container name provided. Using default name: vault_server"
+  CONTAINER_NAME=vault_server
+else
+  PORT=$3
+fi
+
 # Step 1: Build the corresponding Vault Docker image using the Dockerfile in the project directory
 docker build -f "$PROJECT_DIR/Dockerfile.vaultbuild" \
   --build-arg always_upgrade=$DATE \
@@ -49,7 +57,7 @@ CONFIG_DIR=$(realpath "$PROJECT_DIR/config")
 
 # Step 4: Create and run the container using the absolute path
 docker run -d \
-  --name vault_server \
+  --name $CONTAINER_NAME \
   --network production \
   -p $PORT:9200 \
   -v "$CONFIG_DIR":/home/vault/config:rw \
