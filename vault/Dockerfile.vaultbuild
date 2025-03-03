@@ -1,0 +1,32 @@
+# Use the official HashiCorp Vault image
+ARG VERSION=1.17
+FROM hashicorp/vault:${VERSION}
+
+# ARG to force Docker not to use cache when building
+ARG always_upgrade
+
+USER root
+# Update the base image and install necessary packages
+RUN echo ${always_upgrade} > /dev/null \
+    && apk update \
+    && apk upgrade \
+    && apk add bash openssl jq curl
+
+# Switch to the vault user
+USER vault
+
+# Set the working directory
+WORKDIR /app
+
+# Create necessary directories
+RUN mkdir -p /vault/config && mkdir -p /home/vault/plugins
+
+# Expose the configured port
+EXPOSE 9200
+
+# Healthcheck to ensure Vault is running on the specified port
+HEALTHCHECK CMD curl --fail --silent --show-error \
+    --cert /home/vault/config/certificates/vault-client.crt \
+    --key /home/vault/config/certificates/vault-client.key \
+    --cacert /home/vault/config/certificates/root.crt \
+    https://127.0.0.1:9200/v1/sys/health || exit 1
